@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LA BASE 1.7.10 Mods</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 50px; 
+            background-color: black; 
+            color: white; 
+        }
+        
+        button { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background-color: #444; 
+            color: white; 
+            border: none;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        progress { 
+            width: 80%; 
+            margin: 20px 0; 
+            height: 20px; 
+        }
+        
+        h1, h2, h6, p { 
+            color: white; 
+        }
+    </style>
+</head>
+<body>
+    <h1>MODS</h1>
+    <p>Pagina para instalar los mods necesarios.</p>
+    <h2>DESCOMPRESIÓN</h2>
+    <input type="file" id="fileInput" accept=".zip" />
+    <button id="extractButton" disabled>Descomprimir</button>
+    <p id="status"></p>
+    <progress id="progressBar" value="0" max="100" style="display: none;"></progress>
+    <h2>INSTRUCCIONES</h2>
+    <p>DESCARGAR ARCHIVO EN DISCORD (mods.zip)</p>
+    <p>Descomprimilo en una carpeta en el escritorio, después abri una carpeta y usa CTRL + V</p>
+    <p>En el buscador de archivos, para pegar un enlace que se te copió</p> 
+    <p>Automáticamente en el portapapeles. El link final:</p>
+    <h6>C:/Users/%USERPROFILE%/AppData/Roaming/.minecraft/versions/1.7.10/mods</h6>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const extractButton = document.getElementById('extractButton');
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                extractButton.disabled = false;
+                status.textContent = "Click en descomprimir (SEGUIR INSTRUCCIONES)";
+            } else {
+                extractButton.disabled = true;
+                status.textContent = "";
+            }
+        });
+
+        extractButton.addEventListener('click', async () => {
+            if (fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            status.textContent = "Descomprimiendo...";
+            progressBar.style.display = "block";
+            progressBar.value = 0;
+
+            try {
+                const zip = new JSZip();
+                const content = await zip.loadAsync(file);
+                const totalFiles = Object.keys(content.files).length;
+                let processedFiles = 0;
+
+                const dirHandle = await window.showDirectoryPicker();
+
+                const modsFolderHandle = await dirHandle.getDirectoryHandle('Mods', { create: true });
+
+                for (const [fileName, fileData] of Object.entries(content.files)) {
+                    if (!fileData.dir) {
+                        const fileBlob = await fileData.async("blob");
+                        const fileHandle = await modsFolderHandle.getFileHandle(fileName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(fileBlob);
+                        await writable.close();
+                        processedFiles++;
+                        progressBar.value = (processedFiles / totalFiles) * 100;
+                    }
+                }
+
+                status.textContent = "Archivos descomprimidos y guardados en la carpeta 'Mods'.";
+                alert("Descompresión completada.");
+                progressBar.style.display = "none";
+            } catch (error) {
+                console.error(error);
+                status.textContent = "Ocurrió un error durante el proceso.";
+                progressBar.style.display = "none";
+            }
+        });
+    </script>
+
+    <script>
+        const ruta = "C:/Users/%USERPROFILE%/AppData/Roaming/.minecraft/versions/";
+
+        navigator.clipboard.writeText(ruta).catch(() => {
+            document.getElementById('status').textContent = "No se pudo copiar la ruta automáticamente. Por favor, cópiala manualmente. C:/Users/%USERPROFILE%/AppData/Roaming/.minecraft/versions/";
+        });
+    </script>
+
+</body>
+</html>
